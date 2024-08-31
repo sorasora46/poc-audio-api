@@ -1,7 +1,7 @@
 import React from "react"
 
 function App() {
-  const [audio] = React.useState(new Audio("public/assets/sound.webm"))
+  const [audio] = React.useState(new Audio("assets/sound.webm"))
   const [isPlaying, setIsPlaying] = React.useState<boolean>(false)
   const [currentTime, setCurrentTime] = React.useState<number>(0)
   const [currentVolume, setCurrentVolume] = React.useState<number>(0)
