@@ -29,7 +29,7 @@ function App() {
 
   const handleIncreaseVolume = () => {
     setCurrentVolume((prevVolume) => {
-      const newVolume = Math.min(prevVolume + 0.1, 1) // Increase by 0.1 and clamp to max 1
+      const newVolume = Math.min(prevVolume + 0.1, 1)
       audio.volume = newVolume
       return newVolume
     })
@@ -37,7 +37,7 @@ function App() {
 
   const handleDecreaseVolume = () => {
     setCurrentVolume((prevVolume) => {
-      const newVolume = Math.max(prevVolume - 0.1, 0) // Decrease by 0.1 and clamp to min 0
+      const newVolume = Math.max(prevVolume - 0.1, 0)
       audio.volume = newVolume
       return newVolume
     })
@@ -67,7 +67,7 @@ function App() {
       <div className="container">
         <div className="box">
           <p>{getFormatDuration(currentTime)}/{getFormatDuration(audio.duration)}</p>
-          <p>volume: {currentVolume}</p>
+          <p>volume: {currentVolume.toFixed(2)}</p>
           <button onClick={handleIncreaseVolume}>increase volume</button>
           <button onClick={handleDecreaseVolume}>decrease volume</button>
           <button onClick={handleTogglePlayAudio}>
