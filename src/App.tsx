@@ -1,80 +1,63 @@
-import React from "react"
+import { useRef, useState } from "react"
+import AudioDecibelMeter from "./AudioDecibelMeter";
 
 function App() {
-  const [audio] = React.useState(new Audio("assets/sound.webm"))
-  const [isPlaying, setIsPlaying] = React.useState<boolean>(false)
-  const [currentTime, setCurrentTime] = React.useState<number>(0)
-  const [currentVolume, setCurrentVolume] = React.useState<number>(0)
+  const audioContext = useRef<AudioContext | null>(null)
+  const audioElement = useRef<HTMLMediaElement | null>(null);
+  const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
+  const [leftVolume, setLeftVolume] = useState<number>(0);
+  const [rightVolume, setRightVolume] = useState<number>(0);
 
-  const handleTogglePlayAudio = () => {
-    if (isPlaying) {
-      audio.pause()
-      setIsPlaying(false)
-    } else {
-      audio.play()
-      setIsPlaying(true)
+  const handlePlayAudio = () => {
+    console.log('played')
+    audioContext.current = new AudioContext()
+
+    if (audioElement.current) {
+      const audioSource = audioContext.current.createMediaElementSource(audioElement.current)
+      const analyzerLeft = audioContext.current.createAnalyser()
+      const analyzerRight = audioContext.current.createAnalyser()
+      const splitter = audioContext.current.createChannelSplitter(2)
+      audioSource.connect(splitter)
+
+      splitter.connect(analyzerLeft, 0)
+      splitter.connect(analyzerRight, 1)
+
+      scriptProcessorRef.current = audioContext.current.createScriptProcessor(2048, 2, 2);
+
+      scriptProcessorRef.current.onaudioprocess = () => {
+        const leftData = new Uint8Array(analyzerLeft.frequencyBinCount)
+        const rightData = new Uint8Array(analyzerRight.frequencyBinCount)
+
+        analyzerLeft.getByteFrequencyData(leftData)
+        analyzerRight.getByteFrequencyData(rightData)
+
+        const leftRms = Math.sqrt(leftData.reduce((sum, val) => sum + val * val, 0) / leftData.length)
+        const rightRms = Math.sqrt(rightData.reduce((sum, val) => sum + val * val, 0) / rightData.length)
+
+        const leftDecibel = Math.abs(20 * Math.log10(leftRms / 255))
+        const rightDecibel = Math.abs(20 * Math.log10(rightRms / 255))
+
+        setLeftVolume(parseFloat(leftDecibel.toFixed(2)))
+        setRightVolume(parseFloat(rightDecibel.toFixed(2)))
+      }
+
+      splitter.connect(scriptProcessorRef.current)
+      scriptProcessorRef.current.connect(audioContext.current.destination)
     }
   }
 
-  const handleResetAudio = () => {
-    audio.load()
+  const getFormattedVolume = (volume: number) => {
+    return volume == Number.POSITIVE_INFINITY ? 0 : volume
   }
-
-  const getFormatDuration = (time: number) => {
-    const mins = Math.floor(time / 60)
-    const seconds = Math.floor(time % 60)
-    const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
-    return `${mins}:${formattedSeconds}`
-  }
-
-  const handleIncreaseVolume = () => {
-    setCurrentVolume((prevVolume) => {
-      const newVolume = Math.min(prevVolume + 0.1, 1)
-      audio.volume = newVolume
-      return newVolume
-    })
-  }
-
-  const handleDecreaseVolume = () => {
-    setCurrentVolume((prevVolume) => {
-      const newVolume = Math.max(prevVolume - 0.1, 0)
-      audio.volume = newVolume
-      return newVolume
-    })
-  }
-
-  React.useEffect(() => {
-    const updateCurrentTime = () => {
-      setCurrentTime(audio.currentTime)
-    }
-
-    const updateCurrentVolume = () => {
-      setCurrentVolume(audio.volume)
-    }
-
-    audio.addEventListener('timeupdate', updateCurrentTime);
-
-    audio.addEventListener('volumechange', updateCurrentVolume);
-
-    return () => {
-      audio.removeEventListener('timeupdate', updateCurrentTime);
-      audio.removeEventListener('volumechange', updateCurrentVolume)
-    }
-  }, [audio])
 
   return (
     <>
       <div className="container">
+        {/* <AudioDecibelMeter /> */}
         <div className="box">
-          <p>{getFormatDuration(currentTime)}/{getFormatDuration(audio.duration)}</p>
-          <p>volume: {currentVolume.toFixed(2)}</p>
-          <button onClick={handleIncreaseVolume}>increase volume</button>
-          <button onClick={handleDecreaseVolume}>decrease volume</button>
-          <button onClick={handleTogglePlayAudio}>
-            {isPlaying ? "pause" : "play"}
-          </button>
-          <button onClick={handleResetAudio}>reset</button>
-          <p>audio duration: {audio.duration} seconds</p>
+          <p>{getFormattedVolume(leftVolume)} dB</p>
+          <p>{getFormattedVolume(rightVolume)} dB</p>
+          <audio ref={audioElement} onPlay={handlePlayAudio} src="assets/sound.webm" controls></audio>
         </div>
       </div>
     </>
