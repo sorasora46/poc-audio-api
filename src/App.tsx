@@ -1,5 +1,6 @@
 import { useRef, useState } from "react"
 import AudioDecibelMeter from "./AudioDecibelMeter";
+import AudioSplitter from "./AudioSplitter";
 
 function App() {
   const audioContext = useRef<AudioContext | null>(null)
@@ -59,6 +60,7 @@ function App() {
           <p>{getFormattedVolume(rightVolume)} dB</p>
           <audio ref={audioElement} onPlay={handlePlayAudio} src="assets/sound.webm" controls></audio>
         </div>
+        {/* <AudioSplitter /> */}
       </div>
     </>
   )
